@@ -16,9 +16,12 @@ jobs:
         run: |
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
           
-      - name: Download iOS SDK
+      - name: Setup SDK
         run: |
-          git clone --depth=1 https://github.com/theos/sdks.git $HOME/theos/sdks
+          cd $HOME/theos
+          mkdir -p sdks
+          cd sdks
+          git clone --depth=1 https://github.com/theos/sdks.git . || curl -LO https://github.com/theos/sdks/raw/master/iPhoneOS16.5.sdk.tar.xz
           
       - name: Build Package
         run: |
