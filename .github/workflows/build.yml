@@ -21,7 +21,12 @@ jobs:
           cd $HOME/theos
           mkdir -p sdks
           cd sdks
-          git clone --depth=1 https://github.com/theos/sdks.git . || curl -LO https://github.com/theos/sdks/raw/master/iPhoneOS16.5.sdk.tar.xz
+          curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/latest/iPhoneOS16.5.sdk.tar.xz || true
+          if [ -f iPhoneOS16.5.sdk.tar.xz ]; then
+            tar -xf iPhoneOS16.5.sdk.tar.xz
+          else
+            git clone --depth=1 https://github.com/theos/sdks.git .
+          fi
           
       - name: Build Package
         run: |
