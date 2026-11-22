@@ -1,0 +1,9 @@
+package = com.yourname.ios27statusbar
+name = iOS27StatusBar
+version = 1.0.0
+depends = mobilesubstrate, firmware (>= 15.0)
+maintainer = Haoge
+author = Haoge
+section = Tweaks
+description = iOS 27 StatusBar Modern Style for iOS 16+
+architecture = iphoneos-arm64e
