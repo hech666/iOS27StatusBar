@@ -1,9 +1,9 @@
-package = com.yourname.ios27statusbar
-name = iOS27StatusBar
-version = 1.0.0
-depends = mobilesubstrate, firmware (>= 15.0)
-maintainer = Haoge
-author = Haoge
-section = Tweaks
-description = iOS 27 StatusBar Modern Style for iOS 16+
-architecture = iphoneos-arm64e
+Package: com.local.ios27statusbar
+Name: iOS27StatusBar (Reconstructed)
+Version: 1.4.0~ios16native2+reconstructed.1
+Architecture: iphoneos-arm64e
+Description: Static semantic source reconstruction for iOS 16 status bar views. Not the author's original source; not device-verified.
+Maintainer: iOS27StatusBar reconstruction
+Author: Original package credits: 半生年华, yaowell, Benja Guo; reconstruction from supplied binary
+Section: Tweaks
+Depends: mobilesubstrate, firmware (>= 16.0)

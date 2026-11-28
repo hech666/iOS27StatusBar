@@ -1,41 +1,64 @@
-name: Build Tweak
-
+name: iOS27StatusBar arm64e RootHide
 on:
   push:
-    branches: [ main ]
+    branches:
+      - reconstruction/arm64e-roothide
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      THEOS: ${{ github.workspace }}/.theos-roothide
+      THEOS_PACKAGE_SCHEME: roothide
+      ARCHS: arm64e
+      THEOS_IGNORE_PARALLEL_BUILDING_NOTICE: yes
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Theos
+      - uses: actions/checkout@v4
+      - name: Select Xcode and install host tools
         run: |
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          
-      - name: Setup SDK
+          set -euo pipefail
+          xcode-select -p
+          xcrun --find clang
+          brew install dpkg ldid
+      - name: Fetch pinned Roothide Theos and iOS SDK
+        shell: bash
         run: |
-          cd $HOME/theos
-          mkdir -p sdks
-          cd sdks
-          curl -L -o iPhoneOS16.5.sdk.tar.xz https://github.com/theos/sdks/releases/download/latest/iPhoneOS16.5.sdk.tar.xz || true
-          if [ -f iPhoneOS16.5.sdk.tar.xz ]; then
-            tar -xf iPhoneOS16.5.sdk.tar.xz
-          else
-            git clone --depth=1 https://github.com/theos/sdks.git .
-          fi
-          
-      - name: Build Package
+          set -euo pipefail
+          THEOS_COMMIT=958fea4f779943505b15b93c88bb4db8d97b346d
+          SDK_COMMIT=0222fd5413cf4b9af096f37b4621afa2688572f7
+          git clone --filter=blob:none --no-checkout https://github.com/roothide/theos.git "$THEOS"
+          git -C "$THEOS" fetch --depth 1 origin "$THEOS_COMMIT"
+          git -C "$THEOS" checkout --detach FETCH_HEAD
+          git -C "$THEOS" submodule update --init --recursive --depth 1
+          test "$(git -C "$THEOS" rev-parse HEAD)" = "$THEOS_COMMIT"
+          git clone --filter=blob:none --no-checkout https://github.com/theos/sdks.git "$RUNNER_TEMP/theos-sdks"
+          git -C "$RUNNER_TEMP/theos-sdks" fetch --depth 1 origin "$SDK_COMMIT"
+          git -C "$RUNNER_TEMP/theos-sdks" sparse-checkout init --cone
+          git -C "$RUNNER_TEMP/theos-sdks" sparse-checkout set iPhoneOS16.5.sdk
+          git -C "$RUNNER_TEMP/theos-sdks" checkout --detach "$SDK_COMMIT"
+          cp -a "$RUNNER_TEMP/theos-sdks/iPhoneOS16.5.sdk" "$THEOS/sdks/"
+          echo "$THEOS/bin" >> "$GITHUB_PATH"
+          git -C "$THEOS" rev-parse HEAD
+          git -C "$RUNNER_TEMP/theos-sdks" rev-parse HEAD
+      - name: Build arm64e RootHide package
+        shell: bash
         run: |
-          export THEOS=$HOME/theos
-          export PATH="$THEOS/bin:$PATH"
-          make package FINALPACKAGE=1
-          
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+          set -euo pipefail
+          PACKAGE_VERSION="1.4.0~ios16native2+reconstructed.${GITHUB_RUN_NUMBER}" sh build.sh roothide
+      - name: Verify package metadata and architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEB=$(python3 -c 'from pathlib import Path; p=list(Path("packages").glob("*.deb")); assert len(p)==1, p; print(p[0])')
+          dpkg-deb --info "$DEB"
+          dpkg-deb --contents "$DEB"
+          python3 scripts/verify-package.py
+      - uses: actions/upload-artifact@v4
         with:
-          name: ios27statusbar-deb
+          name: iOS27StatusBar-Roothide-arm64e-${{ github.run_number }}
           path: packages/*.deb
+          if-no-files-found: error
+          retention-days: 30
